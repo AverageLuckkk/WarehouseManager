@@ -1,112 +1,507 @@
-<html>
-    <head>
-        <h1>Inventory Manager</h1>
-    </head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warehouse & Logistics Management System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    <body> 
-        <!-- Add warehouse form -->
-        <form class="grid" action="\add_warehouse" method="POST">
-            <div>
-                <label for="Name">Add Warehouse:</label>
-            </div>
-            <div>
-                <input type="text" name="warehouse_name" placeholder="Warehouse Name">
-                <input type="checkbox" name="copy_items">
-                <label for="copy_items">Copy item types from current warehouse</label>
-                <button type="submit" value="submit_button">Add</button>
-            </div>
-        </form>
-        
-        <!-- Add warehouse item -->
-        <form class="grid" action="\add_item" method="POST">
-            <div>
-                <label for="Name">Add item:</label>
-            </div>
-            <div>
-                <input type="text" name="item_name" placeholder="Item Name">
-                <input type="text" name="quantity" placeholder="Quantity">
-                <input type="text" name="other" placeholder="Other Information">
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
 
-                <button type="submit" value="submit_button">Add</button>
-            </div>
-        </form>
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
 
-        <!-- Select warehouse form -->
-        <form class="grid" action="\select_warehouse" method="POST">
-            <div>
-                <label>Select Warehouse:</label>
-            </div>
-            <div>
-                {% for warehouse in warehouse_data["warehouses"] %}
-                    <input type="submit" name="submit_button" value="{{warehouse}}">
-                {% endfor %}
-            </div>
-        </form>
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
 
-        <!-- Delete warehouse form -->
-        <form class="grid" action="\delete_warehouse" method="POST">
-                <button type="submit" value="submit_button">Delete Current Warehouse</button>
-        </form>
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
 
-        <!-- Form for item data edit if "edit_item_data" is present -->
-        {% if warehouse_data["edit_item_data"]%}
-            <form class="grid" action="\save_edit" method="POST">
-                <input type="text" name="item_name" value="{{warehouse_data['edit_item_data']['name']}}" placeholder="Item Name">
-                <input type="text" name="id" value="{{warehouse_data['edit_item_data']['id']}}" placeholder="Item ID">
-                <input type="text" name="quantity" value="{{warehouse_data['edit_item_data']['quantity']}}" placeholder="Quantity">
-                <input type="text" name="other" value="{{warehouse_data['edit_item_data']['other']}}" placeholder="Other Information">
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
 
-                <button type="submit" name = "old_id" value="{{warehouse_data['edit_item_data']['id']}}">Save</button>
-            </form>
-        {% endif %}
-        
-        <!-- Display Error message if current state has an error.-->
-        <div>
-            {% if warehouse_data["error_message"] %}
-                <label>Error: {{warehouse_data["error_message"]}}</label>
-            {% endif %}
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .sidebar {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+        }
+
+        .content-area {
+            background: white;
+        }
+
+        .section-title {
+            color: #2c3e50;
+            font-size: 1.4em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #3498db;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #34495e;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60, #229954);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(243, 156, 18, 0.4);
+        }
+
+        .btn-sm {
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+
+        .storage-locations {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .location-btn {
+            padding: 15px 10px;
+            text-align: center;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .location-btn.bulk {
+            background: linear-gradient(135deg, #8e44ad, #9b59b6);
+            color: white;
+        }
+
+        .location-btn.misc {
+            background: linear-gradient(135deg, #16a085, #1abc9c);
+            color: white;
+        }
+
+        .location-btn.side {
+            background: linear-gradient(135deg, #d35400, #e67e22);
+            color: white;
+        }
+
+        .location-btn.other {
+            background: linear-gradient(135deg, #7f8c8d, #95a5a6);
+            color: white;
+        }
+
+        .current-location {
+            background: #2c3e50;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .inventory-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .inventory-table th {
+            background: linear-gradient(135deg, #34495e, #2c3e50);
+            color: white;
+            padding: 15px 10px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .inventory-table td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #e1e8ed;
+            vertical-align: middle;
+        }
+
+        .inventory-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .quantity-controls {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .error-message {
+            background: #e74c3c;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #7f8c8d;
+        }
+
+        .empty-state i {
+            font-size: 4em;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 2fr;
+            gap: 15px;
+            align-items: end;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #ecf0f1, #bdc3c7);
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏭 Warehouse & Logistics Management</h1>
+            <p>Efficient inventory management for your storage locations</p>
         </div>
-        
-        <!-- Forms for edit quantity, edit item, delete item buttons in list -->
-        <form id="edit_quantity" action="\edit_quantity" method="POST"></form>
-        <form id="edit_item" action="\edit_item" method="POST"></form>
-        <form id="delete_item" action="\delete_item" method="POST"></form>
 
-        <!-- Display warehouse information-->
-        <div>
-            {% if not warehouse_data["current_warehouse"] %}
-                <h2>Add or select a warehouse to view items.</h2>
-            {% else %}
-                <h2> Items in {{warehouse_data["current_warehouse"]}}: </h2>
-                {% if warehouse_data["items"] %}
-                    <table>
-                        <tr>
-                            <th>Item Name</th>
-                            <th>Item ID</th>
-                            <th>Quantity</th>
-                            <th>Other Information</th>
-                        </tr>
-                        {% for item_data in warehouse_data["items"] %}
-                            <tr>
-                                <td>{{item_data[0]}}</td>
-                                <td>{{item_data[1]}}</td>
-                                <td>{{item_data[2]}}</td>
-                                <td>{{item_data[3]}}</td>
-                                <td><button form="edit_quantity" type="submit" name="submit_button" value="{{item_data[1]}},-10">-10</button></td>
-                                <td><button form="edit_quantity" type="submit" name="submit_button" value="{{item_data[1]}},-1">-1</button></td>
-                                <td><button form="edit_quantity" type="submit" name="submit_button" value="{{item_data[1]}},1">+1</button></td>
-                                <td><button form="edit_quantity" type="submit" name="submit_button" value="{{item_data[1]}},10">+10</button></td>
-                                <td><button form="edit_item" type="submit" name="submit_button" value="{{item_data[1]}}">Edit</button></td>
-                                <td><button form="delete_item" type="submit" name="submit_button" value="{{item_data[1]}}">Delete</button></td>
-                            </tr>
-                        {% endfor %}
-                    </table>
-                {% else %}
-                    <label>The {{warehouse_data["current_warehouse"]}} warehouse is empty!</label>
+        <div class="main-content">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <h3 class="section-title">📍 Storage Locations</h3>
+                
+                {% if warehouse_data["current_warehouse"] %}
+                    <div class="current-location">
+                        📦 Current: {{ warehouse_data["current_warehouse"].replace("_", " ") }}
+                    </div>
                 {% endif %}
-            {% endif %}
+
+                <form action="/select_warehouse" method="POST">
+                    <div class="storage-locations">
+                        {% for warehouse in warehouse_data["warehouses"] %}
+                            {% if warehouse.startswith("Bulk") %}
+                                <button type="submit" name="submit_button" value="{{ warehouse }}" 
+                                        class="location-btn bulk">{{ warehouse.replace("_", " ") }}</button>
+                            {% elif warehouse.startswith("Miscellaneous") %}
+                                <button type="submit" name="submit_button" value="{{ warehouse }}" 
+                                        class="location-btn misc">{{ warehouse.replace("_", " ") }}</button>
+                            {% elif warehouse.startswith("Side") %}
+                                <button type="submit" name="submit_button" value="{{ warehouse }}" 
+                                        class="location-btn side">{{ warehouse.replace("_", " ") }}</button>
+                            {% else %}
+                                <button type="submit" name="submit_button" value="{{ warehouse }}" 
+                                        class="location-btn other">{{ warehouse.replace("_", " ") }}</button>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </form>
+
+                <h3 class="section-title">➕ Add New Location</h3>
+                <form action="/add_warehouse" method="POST">
+                    <div class="form-group">
+                        <label>Location Name:</label>
+                        <input type="text" name="warehouse_name" class="form-control" placeholder="Enter location name">
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" name="copy_items" id="copy_items">
+                        <label for="copy_items">Copy items from current location</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Location</button>
+                </form>
+
+                {% if warehouse_data["current_warehouse"] %}
+                    <form action="/delete_warehouse" method="POST" style="margin-top: 20px;">
+                        <button type="submit" class="btn btn-danger" 
+                                onclick="return confirm('Are you sure you want to delete this location?')">
+                            Delete Current Location
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+
+            <!-- Main Content Area -->
+            <div class="content-area">
+                {% if warehouse_data["error_message"] %}
+                    <div class="error-message">
+                        ⚠️ Error: {{ warehouse_data["error_message"] }}
+                    </div>
+                {% endif %}
+
+                {% if warehouse_data["current_warehouse"] %}
+                    <h2 class="section-title">📋 Inventory - {{ warehouse_data["current_warehouse"].replace("_", " ") }}</h2>
+                    
+                    <!-- Stats -->
+                    <div class="stats">
+                        <div class="stat-card">
+                            <div class="stat-number">{{ warehouse_data["items"]|length }}</div>
+                            <div class="stat-label">Total Items</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">{{ warehouse_data["items"]|sum(attribute=2)|default(0) }}</div>
+                            <div class="stat-label">Total Quantity</div>
+                        </div>
+                    </div>
+
+                    <!-- Add Item Form -->
+                    <h3 class="section-title">➕ Add New Item</h3>
+                    {% if warehouse_data["edit_item_data"] %}
+                        <form action="/save_edit" method="POST">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Item Name:</label>
+                                    <input type="text" name="item_name" class="form-control" 
+                                           value="{{ warehouse_data['edit_item_data']['name'] }}">
+                                </div>
+                                <div class="form-group">
+                                    <label>Item ID:</label>
+                                    <input type="text" name="id" class="form-control" 
+                                           value="{{ warehouse_data['edit_item_data']['id'] }}">
+                                </div>
+                                <div class="form-group">
+                                    <label>Other Information:</label>
+                                    <input type="text" name="other" class="form-control" 
+                                           value="{{ warehouse_data['edit_item_data']['other'] }}">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Quantity:</label>
+                                <input type="number" name="quantity" class="form-control" 
+                                       value="{{ warehouse_data['edit_item_data']['quantity'] }}">
+                            </div>
+                            <button type="submit" name="old_id" value="{{ warehouse_data['edit_item_data']['id'] }}" 
+                                    class="btn btn-success">💾 Save Changes</button>
+                        </form>
+                    {% else %}
+                        <form action="/add_item" method="POST">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Item Name:</label>
+                                    <input type="text" name="item_name" class="form-control" placeholder="Enter item name">
+                                </div>
+                                <div class="form-group">
+                                    <label>Quantity:</label>
+                                    <input type="number" name="quantity" class="form-control" placeholder="0" min="0">
+                                </div>
+                                <div class="form-group">
+                                    <label>Other Information:</label>
+                                    <input type="text" name="other" class="form-control" placeholder="Additional details">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-success">➕ Add Item</button>
+                        </form>
+                    {% endif %}
+
+                    <!-- Inventory Table -->
+                    {% if warehouse_data["items"] %}
+                        <form id="edit_quantity" action="/edit_quantity" method="POST"></form>
+                        <form id="edit_item" action="/edit_item" method="POST"></form>
+                        <form id="delete_item" action="/delete_item" method="POST"></form>
+
+                        <table class="inventory-table">
+                            <thead>
+                                <tr>
+                                    <th>Item Name</th>
+                                    <th>ID</th>
+                                    <th>Quantity</th>
+                                    <th>Other Info</th>
+                                    <th>Quantity Controls</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item_data in warehouse_data["items"] %}
+                                <tr>
+                                    <td><strong>{{ item_data[0] }}</strong></td>
+                                    <td>{{ item_data[1] }}</td>
+                                    <td><span style="font-weight: bold; color: #27ae60;">{{ item_data[2] }}</span></td>
+                                    <td>{{ item_data[3] }}</td>
+                                    <td>
+                                        <div class="quantity-controls">
+                                            <button form="edit_quantity" type="submit" name="submit_button" 
+                                                    value="{{ item_data[1] }},-10" class="btn btn-warning btn-sm">-10</button>
+                                            <button form="edit_quantity" type="submit" name="submit_button" 
+                                                    value="{{ item_data[1] }},-1" class="btn btn-warning btn-sm">-1</button>
+                                            <button form="edit_quantity" type="submit" name="submit_button" 
+                                                    value="{{ item_data[1] }},1" class="btn btn-success btn-sm">+1</button>
+                                            <button form="edit_quantity" type="submit" name="submit_button" 
+                                                    value="{{ item_data[1] }},10" class="btn btn-success btn-sm">+10</button>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <button form="edit_item" type="submit" name="submit_button" 
+                                                value="{{ item_data[1] }}" class="btn btn-primary btn-sm">✏️ Edit</button>
+                                        <button form="delete_item" type="submit" name="submit_button" 
+                                                value="{{ item_data[1] }}" class="btn btn-danger btn-sm"
+                                                onclick="return confirm('Delete this item?')">🗑️ Delete</button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <div class="empty-state">
+                            <div style="font-size: 4em; margin-bottom: 20px;">📦</div>
+                            <h3>No items in this location</h3>
+                            <p>Add your first item using the form above</p>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="empty-state">
+                        <div style="font-size: 4em; margin-bottom: 20px;">🏭</div>
+                        <h3>Select a Storage Location</h3>
+                        <p>Choose a storage location from the sidebar to view and manage inventory</p>
+                    </div>
+                {% endif %}
+            </div>
         </div>
-
-    </body>
-
+    </div>
+</body>
 </html>
